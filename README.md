@@ -1,5 +1,7 @@
-OSCeleton
+OSCeleton-Puppet
 =========
+
+This is a fork of OSCeleton that adds a number of hacks for a specific project.
 
 What is this?
 -------------
