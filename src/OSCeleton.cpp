@@ -62,6 +62,7 @@ bool record = false;
 bool sendRot = false;
 bool filter = false;
 bool preview = false;
+bool raw = false;
 int nDimensions = 3;
 
 void (*oscFunc)(osc::OutboundPacketStream*, char*) = NULL;
@@ -157,9 +158,19 @@ int jointPos(XnUserID player, XnSkeletonJoint eJoint) {
 		return -1;
 
 	userID = player;
-	jointCoords[0] = off_x + (mult_x * (1280 - joint.position.X) / 2560); //Normalize coords to 0..1 interval
-	jointCoords[1] = off_y + (mult_y * (960 - joint.position.Y) / 1920); //Normalize coords to 0..1 interval
-	jointCoords[2] = off_z + (mult_z * joint.position.Z * 7.8125 / 10000); //Normalize coords to 0..7.8125 interval
+
+	if (!raw)
+	{
+	  jointCoords[0] = off_x + (mult_x * (1280 - joint.position.X) / 2560); //Normalize coords to 0..1 interval
+	  jointCoords[1] = off_y + (mult_y * (960 - joint.position.Y) / 1920); //Normalize coords to 0..1 interval
+	  jointCoords[2] = off_z + (mult_z * joint.position.Z * 7.8125 / 10000); //Normalize coords to 0..7.8125 interval
+	}
+	else
+	{
+	  jointCoords[0] = joint.position.X;
+	  jointCoords[1] = joint.position.Y;
+	  jointCoords[2] = joint.position.Z;
+	}
 
 //for (int i=0; i<9; i++)
 	//	jointRots[i] = joint.orientation.orientation.elements[i];
@@ -202,9 +213,20 @@ void sendUserPosMsg(XnUserID id) {
 	p << osc::BeginBundleImmediate;
 	p << osc::BeginMessage(tmp);
 	userGenerator.GetCoM(id, com);
-	p << (float)(off_x + (mult_x * (1280 - com.X) / 2560));
-	p << (float)(off_y + (mult_y * (1280 - com.Y) / 2560));
-	p << (float)(off_z + (mult_z * com.Z * 7.8125 / 10000));
+
+	if (!raw)
+	{
+	  p << (float)(off_x + (mult_x * (1280 - com.X) / 2560));
+	  p << (float)(off_y + (mult_y * (1280 - com.Y) / 2560));
+	  p << (float)(off_z + (mult_z * com.Z * 7.8125 / 10000));
+	}
+	else
+	{
+	  p << com.X;
+	  p << com.Y;
+	  p << com.Z;
+	}
+
 	p << osc::EndMessage;
 	p << osc::EndBundle;
 	transmitSocket->Send(p.Data(), p.Size());
@@ -328,6 +350,8 @@ Options:\n\
   -q\t\t Enable Quartz Composer OSC format.\n\
   -s <file>\t Save to file (only .oni supported at the moment).\n\
   -i <file>\t Play from file (only .oni supported at the moment).\n\
+  -xr\t\tOutput raw kinect data\n\
+  -xd\t\tTurn on puppet defaults: -xr -q -w\n\
   -h\t\t Show help.\n\n\
 For a more detailed explanation of options consult the README file.\n\n",
 		   name, name);
@@ -488,6 +512,21 @@ int main(int argc, char **argv) {
 			break;
 		case 'r':
 			mirrorMode = false;
+			break;
+        case 'x': //Set multipliers
+			switch(argv[arg][2]) {
+			case 'r': // turn on raw mode
+				raw = true;
+				break;
+			case 'd': // turn on default options
+				raw = true;
+				preview = true;
+				oscFunc = &genQCMsg;				
+				break;			
+			default:
+				printf("Bad option given.\n");
+				usage(argv[0]);
+			}
 			break;
 		default:
 			printf("Unrecognized option.\n");
