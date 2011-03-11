@@ -29,7 +29,7 @@ or if in Quartz Composer mode:
     f f f: X axis orientation data
     f f f : Y axis orientation data
     f f f : Z axis orientation data
-Example (left knee of user 3):
+Example (torso of user 4):
     /orient/torso/4 0.938792 -0.0774589 0.335662 0.0649184 0.996714 0.0484401 -0.338311 -0.0236846 0.940736
 
 
