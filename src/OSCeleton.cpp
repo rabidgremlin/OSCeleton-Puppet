@@ -419,7 +419,7 @@ Options:\n\
   -i <file>\t Play from file (only .oni supported at the moment).\n\
   -xr\t\tOutput raw kinect data\n\
   -xt\t\tOutput joint orientation data\n\
-  -xd\t\tTurn on puppet defaults: -xr -xt -q -w\n\
+  -xd\t\tTurn on puppet defaults: -xr -xt -q -w -r\n\
   -h\t\t Show help.\n\n\
 For a more detailed explanation of options consult the README file.\n\n",
 		   name, name);
@@ -593,6 +593,7 @@ int main(int argc, char **argv) {
 				raw = true;
 				preview = true;
 				sendOrient = true;
+				mirrorMode = false;
 				oscFunc = &genQCMsg;				
 				break;			
 			default:
