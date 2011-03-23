@@ -120,6 +120,16 @@ void XN_CALLBACK_TYPE pose_detected(xn::PoseDetectionCapability& capability, con
 	printf("Pose %s detected for user %d\n", strPose, nId);
 	userGenerator.GetPoseDetectionCap().StopPoseDetection(nId);
 	userGenerator.GetSkeletonCap().RequestCalibration(nId, TRUE);
+
+	if (kitchenMode) return;
+
+	osc::OutboundPacketStream p( osc_buffer, OUTPUT_BUFFER_SIZE );
+	p << osc::BeginBundleImmediate;
+	p << osc::BeginMessage("/pose_detected");
+	p << (int)nId;
+	p << osc::EndMessage;
+	p << osc::EndBundle;
+	transmitSocket->Send(p.Data(), p.Size());
 }
 
 
@@ -127,6 +137,16 @@ void XN_CALLBACK_TYPE pose_detected(xn::PoseDetectionCapability& capability, con
 // Callback: Started calibration
 void XN_CALLBACK_TYPE calibration_started(xn::SkeletonCapability& capability, XnUserID nId, void* pCookie) {
 	printf("Calibration started for user %d\n", nId);
+
+	if (kitchenMode) return;
+
+	osc::OutboundPacketStream p( osc_buffer, OUTPUT_BUFFER_SIZE );
+	p << osc::BeginBundleImmediate;
+	p << osc::BeginMessage("/calibration_started");
+	p << (int)nId;
+	p << osc::EndMessage;
+	p << osc::EndBundle;
+	transmitSocket->Send(p.Data(), p.Size());
 }
 
 
@@ -150,6 +170,16 @@ void XN_CALLBACK_TYPE calibration_ended(xn::SkeletonCapability& capability, XnUs
 	else {
 		printf("Calibration failed for user %d\n", nId);
 		userGenerator.GetSkeletonCap().RequestCalibration(nId, TRUE);
+
+		if (kitchenMode) return;
+
+		osc::OutboundPacketStream p( osc_buffer, OUTPUT_BUFFER_SIZE );
+		p << osc::BeginBundleImmediate;
+		p << osc::BeginMessage("/calibration_failed");
+		p << (int)nId;
+		p << osc::EndMessage;
+		p << osc::EndBundle;
+		transmitSocket->Send(p.Data(), p.Size());
 	}
 }
 
