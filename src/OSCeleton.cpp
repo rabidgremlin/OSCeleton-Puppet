@@ -68,6 +68,9 @@ bool filter = false;
 bool preview = false;
 bool raw = false;
 bool sendOrient = false;
+#ifdef WIN32
+bool captureAudio = false;
+#endif
 int nDimensions = 3;
 
 void (*oscFunc)(osc::OutboundPacketStream*, char*) = NULL;
@@ -78,6 +81,36 @@ xn::DepthMetaData depthMD;
 xn::UserGenerator userGenerator;
 XnChar g_strPose[20] = "";
 
+
+#ifdef WIN32
+
+float meterVal;
+
+unsigned __stdcall startRecorder (void* lpParam)
+{	
+	waveCapture *pwc = new waveCapture(8000, 8, 1);
+
+	pwc->start(0,400,3);
+	
+	DWORD bufflen = pwc->getSuggestedBufferSize();	
+	char* pWAVBuffer = new char[bufflen];
+
+	while(1)
+	{		
+		DWORD dwBytesRec = pwc->readBuffer(pWAVBuffer);
+
+		int peak = 0;
+		for(int loop=0; loop < dwBytesRec; loop++)
+		{			
+			int val = (unsigned char)pWAVBuffer[loop];
+
+			peak =  max(peak,val);
+		}
+		
+		meterVal= (float)(peak-127)/128.0f;
+	}
+}
+#endif
 
 
 // Callback: New user was detected
@@ -330,6 +363,22 @@ void sendUserPosMsg(XnUserID id) {
 }
 
 
+#ifdef WIN32
+void sendAudioLevel() {
+	osc::OutboundPacketStream p(osc_buffer, OUTPUT_BUFFER_SIZE);
+
+	p << osc::BeginBundleImmediate;
+	p << osc::BeginMessage("/audio_level");
+	
+	p << meterVal;	  
+
+	p << osc::EndMessage;
+	p << osc::EndBundle;
+	transmitSocket->Send(p.Data(), p.Size());
+}
+#endif
+
+
 
 void sendOSC() {
 	XnUserID aUsers[15];
@@ -449,7 +498,8 @@ Options:\n\
   -i <file>\t Play from file (only .oni supported at the moment).\n\
   -xr\t\tOutput raw kinect data\n\
   -xt\t\tOutput joint orientation data\n\
-  -xd\t\tTurn on puppet defaults: -xr -xt -q -w -r\n\
+  -xa\t\tOutput audio capture volume (WIN32 only) \n\
+  -xd\t\tTurn on puppet defaults: -xr -xt -xa -q -w -r \n\
   -h\t\t Show help.\n\n\
 For a more detailed explanation of options consult the README file.\n\n",
 		   name, name);
@@ -480,11 +530,23 @@ void terminate(int ignored) {
 
 
 void main_loop() {
+	
 	// Read next available data
 	context.WaitAnyUpdateAll();
+	
 	// Process the data
 	depth.GetMetaData(depthMD);
+	
 	sendOSC();
+
+#ifdef WIN32
+	if (captureAudio)
+	{
+		sendAudioLevel();
+	}
+#endif	
+
+
 	if (preview)
 		draw();
 }
@@ -618,12 +680,20 @@ int main(int argc, char **argv) {
 				break;
             case 't': // send joint orientations
 				sendOrient = true;
-				break; 
+				break;
+#ifdef WIN32
+            case 'a': // send joint orientations
+				captureAudio = true;
+				break;
+#endif
 			case 'd': // turn on default options
 				raw = true;
 				preview = true;
 				sendOrient = true;
 				mirrorMode = false;
+#ifdef WIN32
+				captureAudio = true;
+#endif
 				oscFunc = &genQCMsg;				
 				break;			
 			default:
@@ -668,6 +738,7 @@ int main(int argc, char **argv) {
 		userGenerator.GetSkeletonCap().SetSmoothing(0.8);
 	xnSetMirror(depth, !mirrorMode);
 
+
 	transmitSocket = new UdpTransmitSocket(IpEndpointName(ADDRESS, PORT));
 	signal(SIGTERM, terminate);
 	signal(SIGINT, terminate);
@@ -684,8 +755,34 @@ int main(int argc, char **argv) {
 	else
 		printf("Default OSCeleton format\n");
 
+	
+#ifdef WIN32
+	// init audio
+	if (captureAudio)
+	{
+      printf("Capturing audio\n");
+	  HANDLE hThread;
+	  unsigned ThreadId;
+
+	  // Start capturing Thread: thread[0]
+	  hThread = (HANDLE)_beginthreadex(NULL, 0, startRecorder,NULL, 0, &ThreadId);
+	  if (hThread == 0)
+	  {
+		printf("Unable to start sound capture thread! \n\n");
+		exit(1);
+	  }
+	}
+#endif
+
+
 	printf("Initialized Kinect, looking for users...\n\n");
-	context.StartGeneratingAll();
+	nRetVal = context.StartGeneratingAll();
+
+	if (nRetVal != XN_STATUS_OK)
+		{
+	      printf("Init failed: %d !\n\n",nRetVal);
+		  exit(1);
+		}
 
 	if (record)
 		recorder.AddNodeToRecording(depth, XN_CODEC_16Z_EMB_TABLES);
