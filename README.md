@@ -23,22 +23,24 @@ This option outputs the X,Y & Z data as "raw" kinect values
 ### -xt
 This option outputs the joint rotation data.
     Address pattern: "/orient"
-    Type tag: "sifffffffff"
+    Type tag: "siffffffffff"
     s: Joint name, check out the full list of joints below.
     i: The ID of the user.
     f f f: X axis orientation data
     f f f : Y axis orientation data
     f f f : Z axis orientation data
+	f : confidence
 	
 or if in Quartz Composer mode:
 
     Address pattern: "/joint/name/id"
-    Type tag: "fffffffff"
+    Type tag: "ffffffffff"
     f f f: X axis orientation data
     f f f : Y axis orientation data
     f f f : Z axis orientation data
+	f : confidence
 Example (torso of user 4):
-    /orient/torso/4 0.938792 -0.0774589 0.335662 0.0649184 0.996714 0.0484401 -0.338311 -0.0236846 0.940736
+    /orient/torso/4 0.938792 -0.0774589 0.335662 0.0649184 0.996714 0.0484401 -0.338311 -0.0236846 0.940736 0.76
 
 ### -xa
 This option outputs the audio level of the default microphone in a range of [0..1]. 0 = no sound, 1 = max sound. This is only for WIN32 builds.

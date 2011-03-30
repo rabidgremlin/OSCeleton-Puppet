@@ -291,6 +291,9 @@ void genOscMsg(osc::OutboundPacketStream *p, char *name) {
 	  *p << jointOrients[2];
 	  *p << jointOrients[2+3];
 	  *p << jointOrients[2+6];
+
+	  // send confidence
+	  *p << orientConfidence;
 	  
 	  *p << osc::EndMessage;
 	}
@@ -329,6 +332,9 @@ void genQCMsg(osc::OutboundPacketStream *p, char *name) {
 	  *p << jointOrients[2];
 	  *p << jointOrients[2+3];
 	  *p << jointOrients[2+6];
+
+	  // send confidence
+	  *p << orientConfidence;
 	  
 	  *p << osc::EndMessage;
 	}
